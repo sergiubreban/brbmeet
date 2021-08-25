@@ -8,31 +8,49 @@ import {
   Code,
   Grid,
   theme,
+  Flex,
+  Button,
 } from "@chakra-ui/react"
 import { ColorModeSwitcher } from "./ColorModeSwitcher"
-import { Logo } from "./Logo"
+import { Router } from "@reach/router"
+import HomeDashboard from "./components/HomeDashboard"
+import Room from "./components/Room"
+import { createContext } from "react"
+import { navigate } from '@reach/router';
+
+const servers = {
+  iceServers: [{
+    urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+  },],
+  iceCandidatePoolSize: 10,
+};
+const pc = new RTCPeerConnection(servers);
+export const RtcContext = createContext(pc);
+
+pc.addEventListener("iceconnectionstatechange", event => {
+  console.log({event}, pc.iceConnectionState)
+  if (pc.iceConnectionState === "failed") {
+    /* possibly reconfigure the connection in some way here */
+    /* then request ICE restart */
+    pc.restartIce();
+  }
+});
 
 export const App = () => (
   <ChakraProvider theme={theme}>
-    <Box textAlign="center" fontSize="xl">
-      <Grid minH="100vh" p={3}>
-        <ColorModeSwitcher justifySelf="flex-end" />
-        <VStack spacing={8}>
-          <Logo h="40vmin" pointerEvents="none" />
-          <Text>
-            Edit <Code fontSize="xl">src/App.tsx</Code> and save to reload.
-          </Text>
-          <Link
-            color="teal.500"
-            href="https://chakra-ui.com"
-            fontSize="2xl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn Chakra
-          </Link>
-        </VStack>
-      </Grid>
-    </Box>
+    <RtcContext.Provider value={pc}>
+      <Box textAlign="center" fontSize="xl">
+        <Flex direction='row-reverse' p='10px'>
+          <ColorModeSwitcher justifySelf="flex-end" />
+          <Button variant='outline' onClick={() => navigate('/')}>Home</Button>
+        </Flex>
+        <Grid minH="90vh">
+          <Router>
+            <HomeDashboard path="/" />
+            <Room path="/room/:id" />
+          </Router>
+        </Grid>
+      </Box>
+    </RtcContext.Provider>
   </ChakraProvider>
 )
